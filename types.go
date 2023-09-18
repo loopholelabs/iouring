@@ -64,8 +64,9 @@ type CQEvent struct {
 	Res      int32
 	Flags    uint32
 
-	// BigCQE is never used in the library, so it's commented out here.
-	BigCQE []uint64
+	// BigCQE is only required when the ring is initialized with IORING_SETUP_CQE32.
+	// Since we don't support IORING_SETUP_CQE32, we don't need to define BigCQE.
+	//BigCQE   []uint64
 }
 
 // UnionAddress3 is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L88

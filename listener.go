@@ -85,8 +85,7 @@ func NewListener(addr string) (*Listener, error) {
 	}
 
 	ring := NewRing()
-	var params Params
-	err = ring.QueueInit(AcceptEntries, &params)
+	err = ring.QueueInit(AcceptEntries, 0)
 	if err != nil {
 		return nil, fmt.Errorf("error while creating ringbuffer for listening socket with fd %d: %w", fd, err)
 	}
