@@ -192,9 +192,10 @@ func (r *Ring) QueueInitParams(entries uint32, params *Params) error {
 }
 
 // QueueInit is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/setup.c#L181
-func (r *Ring) QueueInit(entries uint32, params *Params) error {
-	r.Flags = params.Flags
-	return r.QueueInitParams(entries, params)
+func (r *Ring) QueueInit(entries uint32, flags uint32) error {
+	var params Params
+	params.Flags = flags
+	return r.QueueInitParams(entries, &params)
 }
 
 func (r *Ring) Close() error {
