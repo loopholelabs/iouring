@@ -231,6 +231,26 @@ const (
 	IntFlagRegRegRing IntFlag = 2
 )
 
+// Feature is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L466
+type Feature uint32
+
+const (
+	FeatureSingleMMap Feature = 1 << iota
+	FeatureNoDrop
+	FeatureSubmitStable
+	FeatureRWCurPos
+	FeatureCurPersonality
+	FeatureFastPoll
+	FeaturePoll32Bits
+	FeatureSQPollNonfixed
+	FeatureExtArg
+	FeatureNativeWorkers
+	FeatureRcrcTags
+	FeatureCQESkip
+	FeatureLinkedFile
+	FeatureRegRegRing
+)
+
 const (
 	// _NSIG is defined here: https://github.com/torvalds/linux/blob/v6.5/include/uapi/asm-generic/signal.h#L7
 	_NSIG = 64
