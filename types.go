@@ -63,7 +63,9 @@ type CQEvent struct {
 	UserData uint64
 	Res      int32
 	Flags    uint32
-	BigCQE   []uint64
+
+	// BigCQE is never used in the library, so it's commented out here.
+	//BigCQE   []uint64
 }
 
 // UnionAddress3 is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L88

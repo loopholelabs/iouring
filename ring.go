@@ -25,6 +25,15 @@ import (
 	"unsafe"
 )
 
+var (
+	emptyCQEvent CQEvent
+	emptySQEntry SQEntry
+
+	cqEventSize = unsafe.Sizeof(emptyCQEvent)
+	sqEntrySize = unsafe.Sizeof(emptySQEntry)
+	uint32Size  = unsafe.Sizeof(uint32(0))
+)
+
 // Ring is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing.h#L128
 type Ring struct {
 	SQ          SubmissionQueue
@@ -37,15 +46,6 @@ type Ring struct {
 	_Pad        [3]uint8
 	_Pad2       uint32
 }
-
-var (
-	emptyCQEvent CQEvent
-	emptySQEntry SQEntry
-
-	cqEventSize = unsafe.Sizeof(emptyCQEvent)
-	sqEntrySize = unsafe.Sizeof(emptySQEntry)
-	uint32Size  = unsafe.Sizeof(uint32(0))
-)
 
 func NewRing() *Ring {
 	return new(Ring)
