@@ -29,7 +29,17 @@ const (
 	AcceptEntries = 256
 )
 
+type Event uint64
+
+const (
+	EventAccept Event = iota
+	EventRead
+	EventWrite
+	EventClose
+)
+
 type Listener struct {
+	ring *Ring
 }
 
 func NewListener(addr string) (*Listener, error) {
@@ -80,23 +90,28 @@ func NewListener(addr string) (*Listener, error) {
 		return nil, fmt.Errorf("error while creating ringbuffer for listening socket with fd %d: %w", fd, err)
 	}
 
-	_ = ring
-	//ring, err := giouring.CreateRing(256)
-	//if err != nil {
-	//	return fmt.Errorf("error while creating ringbuffer: %w", err)
-	//}
-	//
-	//clientLen := new(uint32)
-	//clientAddr := &unix.RawSockaddrAny{}
-	//*clientLen = unix.SizeofSockaddrAny
-	//clientAddrPointer := uintptr(unsafe.Pointer(clientAddr))
-	//clientLenPointer := uint64(uintptr(unsafe.Pointer(clientLen)))
-	//
-	//acceptEntry := ring.GetSQE()
-	//acceptEntry.PrepareAccept(fd, clientAddrPointer, clientLenPointer, 0)
-	//acceptEntry.UserData = acceptFlag | uint64(fd)
+	clientAddr := NewClientAddress()
+	sqe := ring.GetSQEntry()
+	sqe.PrepareAccept(fd, clientAddr.AddressPointer, clientAddr.LengthPointer, 0)
+	sqe.UserData = uint64(EventAccept)
 
-	return nil, nil
+	cqeNR, err := ring.Submit()
+	if err != nil {
+		return nil, fmt.Errorf("error while submitting SQE for listening socket with fd %d: %w", fd, err)
+	}
+
+	if cqeNR != 1 {
+		return nil, fmt.Errorf("error while submitting SQE for listening socket with fd %d: expected 1 CQE, got %d", fd, cqeNR)
+	}
+
+	err = ring.Close()
+	if err != nil {
+		return nil, fmt.Errorf("error while closing ringbuffer for listening socket with fd %d: %w", fd, err)
+	}
+
+	return &Listener{
+		ring: ring,
+	}, nil
 }
 
 func (l *Listener) Accept() (net.Conn, error) {

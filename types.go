@@ -69,7 +69,7 @@ type CQEvent struct {
 // UnionAddress3 is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L88
 type UnionAddress3 struct {
 	Address3 uint64
-	_pad2    [1]uint64
+	_Pad2    [1]uint64
 }
 
 // SQEntry is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L30
@@ -81,7 +81,7 @@ type SQEntry struct {
 	UnionOffset            uint64
 	UnionAddress           uint64
 	Length                 uint32
-	UnionOpCodeFlags       uint32
+	UnionRWFlags           uint32
 	UserData               uint64
 	UnionBufferIndexPacked uint16
 	Personality            uint16
@@ -105,7 +105,7 @@ type SubmissionQueue struct {
 	RingPointer   unsafe.Pointer
 	RingMask      uint32
 	RingEntries   uint32
-	_pad          [2]uint32
+	_Pad          [2]uint32
 }
 
 // CompletionQueue is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing.h#L108
@@ -121,5 +121,117 @@ type CompletionQueue struct {
 	RingPointer   unsafe.Pointer
 	RingMask      uint32
 	RingEntries   uint32
-	_pad          [2]uint32
+	_Pad          [2]uint32
 }
+
+// OpCode is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L176
+type OpCode uint8
+
+const (
+	OpCodeNOP OpCode = iota
+	OpCodeReadV
+	OpCodeWriteV
+	OpCodeFsync
+	OpCodeReadFixed
+	OpCodeWriteFixed
+	OpCodePollAdd
+	OpCodePollRemove
+	OpCodeSyncFileRange
+	OpCodeSendMsg
+	OpCodeRecvMsg
+	OpCodeTimeout
+	OpCodeTimeoutRemove
+	OpCodeAccept
+	OpCodeAsyncCancel
+	OpCodeLinkTimeout
+	OpCodeConnect
+	OpCodeFallocate
+	OpCodeOpenat
+	OpCodeClose
+	OpCodeFilesUpdate
+	OpCodeStatx
+	OpCodeRead
+	OpCodeWrite
+	OpCodeFadvise
+	OpCodeMadvise
+	OpCodeSend
+	OpCodeRecv
+	OpOpenat2
+	OpCodeEpollCtl
+	OpCodeSplice
+	OpCodeProvideBuffers
+	OpCodeRemoveBuffers
+	OpCodeTee
+	OpCodeShutdown
+	OpCodeRenameat
+	OpCodeUnlinkat
+	OpCodeMkdirat
+	OpCodeSymlinkat
+	OpCodeLinkat
+	OpCodeMsgRing
+	OpCodeFsetxattr
+	OpCodeSetxattr
+	OpCodeFgetxattr
+	OpCodeGetxattr
+	OpCodeSocket
+	OpCodeUringCmd
+	OpCodeSendZC
+	OpCodeSendMsgZC
+
+	OpCodeLast
+)
+
+// Setup is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L140
+type Setup uint32
+
+const (
+	SetupIOPoll Setup = 1 << iota
+	SetupSQPoll
+	SetupSQAff
+	SetupCQSize
+	SetupClamp
+	SetupAttachWQ
+	SetupRDisabled
+	SetupSubmitAll
+	SetupCoopTaskRun
+	SetupTaskRunFlag
+	SetupSQE128
+	SetupCQE32
+	SetupSingleIssuer
+	SetupDeferTaskRun
+	SetupNoMMap
+	SetupRegisteredFDOnly
+)
+
+// SQStatus is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L415
+type SQStatus uint32
+
+const (
+	SQStatusNeedWakeup SQStatus = 1 << iota
+	SQStatusCQOverflow
+	SQStatusTaskRun
+)
+
+// Enter is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L441
+type Enter uint32
+
+const (
+	EnterGetEvents Enter = 1 << iota
+	EnterSQWakeup
+	EnterSQWait
+	EnterExtArg
+	EnterRegisteredRing
+)
+
+// IntFlag is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/int_flags.h#L5
+type IntFlag uint8
+
+const (
+	IntFlagRegRing    IntFlag = 1
+	IntFlagRegRegRing IntFlag = 2
+)
+
+const (
+	// _NSIG is defined here: https://github.com/torvalds/linux/blob/v6.5/include/uapi/asm-generic/signal.h#L7
+	_NSIG = 64
+)

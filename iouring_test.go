@@ -15,3 +15,16 @@
 */
 
 package iouring
+
+import (
+	"github.com/stretchr/testify/require"
+	"testing"
+)
+
+func TestListener(t *testing.T) {
+	l, err := NewListener("0.0.0.0:0")
+	require.NoError(t, err)
+
+	err = l.Close()
+	require.NoError(t, err)
+}
