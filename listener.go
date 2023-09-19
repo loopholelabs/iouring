@@ -16,6 +16,7 @@
 
 package iouring
 
+import "C"
 import (
 	"errors"
 	"fmt"
@@ -105,16 +106,18 @@ func NewListener(addr string) (*Listener, error) {
 		return nil, fmt.Errorf("error while submitting SQE for listening socket with fd %d: expected 1 CQE, got %d", fd, cqeNR)
 	}
 
-	for {
-		cqe, err := ring.WaitCQEvent()
-		if errors.Is(err, syscall.EAGAIN) || errors.Is(err, syscall.EINTR) || errors.Is(err, syscall.ETIME) {
-			return nil, fmt.Errorf("error while waiting for CQE for listening socket with fd %d: %w", fd, err)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("error while waiting for CQE for listening socket with fd %d: unknown - %w", fd, err)
-		}
+	cqe, err := ring.WaitCQEvent()
+	if errors.Is(err, syscall.EAGAIN) || errors.Is(err, syscall.EINTR) || errors.Is(err, syscall.ETIME) {
+		return nil, fmt.Errorf("error while waiting for CQE for listening socket with fd %d: %w", fd, err)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error while waiting for CQE for listening socket with fd %d: unknown - %w", fd, err)
+	}
 
-		ring.CQESeen(cqe)
+	ring.CQESeen(cqe)
+
+	for {
+
 	}
 
 	err = ring.Close()
