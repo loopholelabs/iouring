@@ -20,6 +20,8 @@ package iouring
 
 import (
 	"fmt"
+	"golang.org/x/sys/unix"
+	"runtime"
 	"sync/atomic"
 	"syscall"
 	"unsafe"
@@ -52,8 +54,6 @@ func NewRing() *Ring {
 }
 
 // GetSQEntry is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing.h#L1320
-//
-// TODO: Handle IORING_SETUP_SQPOLL (https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing.h#L1329)
 func (r *Ring) GetSQEntry() *SQEntry {
 	head := atomic.LoadUint32(r.SQ.KHead)
 	next := r.SQ.SQETail + 1
@@ -65,14 +65,177 @@ func (r *Ring) GetSQEntry() *SQEntry {
 	return nil
 }
 
-// CQRingNeedsFlush is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/queue.c#L42
-func (r *Ring) CQRingNeedsFlush() bool {
+// WaitCQEvent is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing.h#L1304
+func (r *Ring) WaitCQEvent() (*CQEvent, error) {
+	cqe, err := r._PeekCQEvent(nil)
+	if err == nil && cqe != nil {
+		return cqe, nil
+	}
+
+	return r.WaitCQEventNR(1)
+}
+
+// WaitCQEventNR is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing.h#L1233
+func (r *Ring) WaitCQEventNR(waitNR uint32) (*CQEvent, error) {
+	return r.GetCQEvent(0, waitNR, nil)
+}
+
+// _PeekCQEvent is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing.h#L1245
+func (r *Ring) _PeekCQEvent(nrAvailable *uint32) (cqe *CQEvent, err error) {
+	mask := r.CQ.RingMask
+	available := uint32(0)
+	for {
+		tail := atomic.LoadUint32(r.CQ.KTail)
+		head := *r.CQ.KHead
+
+		cqe = nil
+		available = tail - head
+		if available == 0 {
+			break
+		}
+
+		cqe = (*CQEvent)(
+			unsafe.Add(unsafe.Pointer(r.CQ.CQEs), uintptr(head&mask)*cqEventSize),
+		)
+
+		if r.Features&uint32(FeatureExtArg) == 0 && cqe.UserData == LIBURING_UDATA_TIMEOUT {
+			if cqe.Res < 0 {
+				err = syscall.Errno(uintptr(-cqe.Res))
+			}
+			r.CQAdvance(1)
+			if err == nil {
+				continue
+			}
+			cqe = nil
+		}
+
+		break
+	}
+
+	if nrAvailable != nil {
+		*nrAvailable = available
+	}
+
+	return
+}
+
+// PeekCQEvent is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing.h#L1291
+func (r *Ring) PeekCQEvent() (cqe *CQEvent, err error) {
+	cqe, err = r._PeekCQEvent(nil)
+	if err == nil && cqe != nil {
+		return cqe, nil
+	}
+
+	return r.WaitCQEventNR(0)
+}
+
+// GetCQEvent is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/queue.c#L135
+func (r *Ring) GetCQEvent(submit uint32, waitNR uint32, sigmask *unix.Sigset_t) (*CQEvent, error) {
+	data := GetData{
+		Submit:   submit,
+		WaitNR:   waitNR,
+		GetFlags: 0,
+		Size:     _NSIG / 8,
+		HasTS:    0,
+		Arg:      unsafe.Pointer(sigmask),
+	}
+
+	cqe, err := r._GetCQEvent(&data)
+	runtime.KeepAlive(data)
+
+	return cqe, err
+}
+
+// _GetCQEvent is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/queue.c#L62
+func (r *Ring) _GetCQEvent(data *GetData) (cqe *CQEvent, err error) {
+	looped := false
+	ret := uint(0)
+	localErr := error(nil)
+	for {
+		needEnter := false
+		nrAvailable := uint32(0)
+		flags := uint32(0)
+		cqe, localErr = r._PeekCQEvent(&nrAvailable)
+		if localErr != nil {
+			if err == nil {
+				err = localErr
+			}
+			break
+		}
+
+		if cqe == nil && data.WaitNR == 0 && data.Submit == 0 {
+			if looped || !r.CQNeedsEnter() {
+				if err == nil {
+					err = unix.EAGAIN
+				}
+				break
+			}
+			needEnter = true
+		}
+
+		if data.WaitNR > nrAvailable || needEnter {
+			flags = uint32(EnterGetEvents) | data.GetFlags
+			needEnter = true
+		}
+		if r.SQNeedsEnter(data.Submit, &flags) {
+			needEnter = true
+		}
+		if !needEnter {
+			break
+		}
+		if looped && (data.HasTS != 0) {
+			arg := (*GetEventsArg)(data.Arg)
+			if cqe == nil && arg.TS != 0 && err == nil {
+				err = unix.ETIME
+			}
+			break
+		}
+
+		if r.IntFlags&uint8(IntFlagRegRing) != 0 {
+			flags |= uint32(EnterRegisteredRing)
+		}
+		ret, localErr = r.Enter2(data.Submit, data.WaitNR, flags, data.Arg, data.Size)
+		if localErr != nil {
+			if err == nil {
+				err = localErr
+			}
+			break
+		}
+		data.Submit -= uint32(ret)
+		if cqe != nil {
+			break
+		}
+		if !looped {
+			looped = true
+			err = localErr
+		}
+	}
+
+	return
+}
+
+// CQESeen is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing.h#L319
+func (r *Ring) CQESeen(cqe *CQEvent) {
+	if cqe != nil {
+		r.CQAdvance(1)
+	}
+}
+
+// CQAdvance is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing.h#L302
+func (r *Ring) CQAdvance(numCQEs uint32) {
+	if numCQEs > 0 {
+		atomic.StoreUint32(r.CQ.KHead, *r.CQ.KHead+numCQEs)
+	}
+}
+
+// CQNeedsFlush is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/queue.c#L42
+func (r *Ring) CQNeedsFlush() bool {
 	return atomic.LoadUint32(r.SQ.KFlags)&uint32(SQStatusCQOverflow|SQStatusTaskRun) != 0
 }
 
 // CQNeedsEnter is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/queue.c#L48
 func (r *Ring) CQNeedsEnter() bool {
-	return (r.Flags&uint32(SetupIOPoll)) != 0 || r.CQRingNeedsFlush()
+	return (r.Flags&uint32(SetupIOPoll)) != 0 || r.CQNeedsFlush()
 }
 
 // SQNeedsEnter is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/queue.c#L17

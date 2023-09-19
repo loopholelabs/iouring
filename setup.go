@@ -24,11 +24,6 @@ import (
 
 // MMap is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/setup.c#L18
 func MMap(fd int, params *Params, sq *SubmissionQueue, cq *CompletionQueue) error {
-	cqEventSize := cqEventSize
-	if params.Flags&uint32(SetupCQE32) != 0 {
-		cqEventSize += cqEventSize
-	}
-
 	sq.RingSize = uint(uintptr(params.SQOffsets.Array) + uintptr(params.SQEntries)*uint32Size)
 	cq.RingSize = uint(uintptr(params.CQOffsets.CQEs) + uintptr(params.CQEntries)*cqEventSize)
 

@@ -21,14 +21,14 @@ package iouring
 import "syscall"
 
 var (
-	available = false
+	_available = false
 )
 
 func init() {
 	_, _, errno := syscall.RawSyscall(SYS_IO_URING_REGISTER, 0, 1, 0)
-	available = errno == syscall.ENOSYS
+	_available = errno == syscall.ENOSYS
 }
 
 func IsAvailable() bool {
-	return available
+	return _available
 }

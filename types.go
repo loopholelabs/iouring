@@ -16,7 +16,10 @@
 
 package iouring
 
-import "unsafe"
+import (
+	"math"
+	"unsafe"
+)
 
 // SQRingOffsets is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L400
 type SQRingOffsets struct {
@@ -127,6 +130,24 @@ type CompletionQueue struct {
 	_Pad          [2]uint32
 }
 
+// GetData is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/queue.c#L53
+type GetData struct {
+	Submit   uint32
+	WaitNR   uint32
+	GetFlags uint32
+	Size     int
+	HasTS    int
+	Arg      unsafe.Pointer
+}
+
+// GetEventsArg is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L671
+type GetEventsArg struct {
+	SigMask     uint64
+	SigMaskSize uint32
+	_Pad        uint32
+	TS          uint64
+}
+
 // OpCode is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L176
 type OpCode uint8
 
@@ -199,7 +220,7 @@ const (
 	SetupCoopTaskRun
 	SetupTaskRunFlag
 	SetupSQE128
-	SetupCQE32
+	SetupCQE32 // Unsupported: 32-bit CQEs are not supported by this library
 	SetupSingleIssuer
 	SetupDeferTaskRun
 	SetupNoMMap
@@ -257,4 +278,6 @@ const (
 const (
 	// _NSIG is defined here: https://github.com/torvalds/linux/blob/v6.5/include/uapi/asm-generic/signal.h#L7
 	_NSIG = 64
+
+	LIBURING_UDATA_TIMEOUT = math.MaxUint64
 )
