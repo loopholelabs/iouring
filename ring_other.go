@@ -18,9 +18,96 @@
 
 package iouring
 
-// Ring is an io_uring ring buffer instance.
+import (
+	"unsafe"
+)
+
+type Sigset_t struct {
+	Val [16]uint64
+}
+
 type Ring struct{}
 
-func NewRing(size uint, params *Params) (*Ring, error) {
+func NewRing() (*Ring, error) {
 	return nil, ErrNotAvailable
+}
+
+func (r *Ring) GetSQEntry() *SQEntry {
+	return nil
+}
+
+func (r *Ring) WaitCQEvent() (*CQEvent, error) {
+	return nil, ErrNotAvailable
+}
+
+func (r *Ring) WaitCQEventNR(uint32) (*CQEvent, error) {
+	return nil, ErrNotAvailable
+}
+
+func (r *Ring) _PeekCQEvent(*uint32) (*CQEvent, error) {
+	return nil, ErrNotAvailable
+}
+
+func (r *Ring) PeekCQEvent() (*CQEvent, error) {
+	return nil, ErrNotAvailable
+}
+
+func (r *Ring) GetCQEvent(uint32, uint32, *Sigset_t) (*CQEvent, error) {
+	return nil, ErrNotAvailable
+}
+
+func (r *Ring) _GetCQEvent(*GetData) (*CQEvent, error) {
+	return nil, ErrNotAvailable
+}
+
+func (r *Ring) CQESeen(*CQEvent) {}
+
+func (r *Ring) CQAdvance(uint32) {}
+
+func (r *Ring) CQNeedsFlush() bool {
+	return false
+}
+
+func (r *Ring) CQNeedsEnter() bool {
+	return false
+}
+
+func (r *Ring) SQNeedsEnter(uint32, *uint32) bool {
+	return false
+}
+
+func (r *Ring) FlushSQ() uint32 {
+	return 0
+}
+
+func (r *Ring) _Submit(uint32, uint32, bool) (uint, error) {
+	return 0, ErrNotAvailable
+}
+
+func (r *Ring) Submit() (uint, error) {
+	return 0, ErrNotAvailable
+}
+
+func (r *Ring) Enter(uint32, uint32, uint32, unsafe.Pointer) (uint, error) {
+	return 0, ErrNotAvailable
+}
+
+func (r *Ring) Enter2(uint32, uint32, uint32, unsafe.Pointer, int) (uint, error) {
+	return 0, ErrNotAvailable
+}
+
+func (r *Ring) QueueMMap(int, *Params) error {
+	return ErrNotAvailable
+}
+
+func (r *Ring) QueueInitParams(uint32, *Params) error {
+	return ErrNotAvailable
+}
+
+func (r *Ring) QueueInit(uint32, uint32) error {
+	return ErrNotAvailable
+}
+
+func (r *Ring) Close() error {
+	return ErrNotAvailable
 }

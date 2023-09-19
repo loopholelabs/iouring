@@ -49,8 +49,8 @@ type Ring struct {
 	_Pad2       uint32
 }
 
-func NewRing() *Ring {
-	return new(Ring)
+func NewRing() (*Ring, error) {
+	return new(Ring), nil
 }
 
 // GetSQEntry is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing.h#L1320

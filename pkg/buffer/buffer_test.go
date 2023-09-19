@@ -14,14 +14,17 @@
 	limitations under the License.
 */
 
-package iouring
+package buffer
 
 import (
-	_ "unsafe"
+	"github.com/stretchr/testify/require"
+	"testing"
 )
 
-//go:linkname mmap syscall.mmap
-func mmap(addr uintptr, length uintptr, prot int, flags int, fd int, offset int64) (xaddr uintptr, err error)
+func TestBuffer(t *testing.T) {
+	buf, err := New(512)
+	require.NoError(t, err)
 
-//go:linkname munmap syscall.munmap
-func munmap(addr uintptr, length uintptr) (err error)
+	err = buf.Close()
+	require.NoError(t, err)
+}

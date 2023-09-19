@@ -18,6 +18,7 @@ package iouring
 
 import (
 	"fmt"
+	"github.com/loopholelabs/iouring/pkg/linked"
 	"syscall"
 	"unsafe"
 )
@@ -34,13 +35,13 @@ func MMap(fd int, params *Params, sq *SubmissionQueue, cq *CompletionQueue) erro
 		cq.RingSize = sq.RingSize
 	}
 
-	ringPtr, err := mmap(0, uintptr(sq.RingSize), syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_POPULATE, fd, int64(SQRingOffset))
+	ringPtr, err := linked.MMap(0, uintptr(sq.RingSize), syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_POPULATE, fd, int64(SQRingOffset))
 	if err != nil {
 		return fmt.Errorf("error while MMAPing SQ Ring: %w", err)
 	}
 	sq.RingPointer = unsafe.Pointer(ringPtr)
 
-	ringPtr, err = mmap(0, uintptr(cq.RingSize), syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_POPULATE, fd, int64(CQRingOffset))
+	ringPtr, err = linked.MMap(0, uintptr(cq.RingSize), syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_POPULATE, fd, int64(CQRingOffset))
 	if err != nil {
 		MUnmap(sq, cq)
 		return fmt.Errorf("error while MMAPing CQ Ring: %w", err)
@@ -55,7 +56,7 @@ func MMap(fd int, params *Params, sq *SubmissionQueue, cq *CompletionQueue) erro
 	sq.KDropped = (*uint32)(unsafe.Pointer(uintptr(sq.RingPointer) + uintptr(params.SQOffsets.Dropped)))
 	sq.Array = (*uint32)(unsafe.Pointer(uintptr(sq.RingPointer) + uintptr(params.SQOffsets.Array)))
 
-	ringPtr, err = mmap(0, sqEntrySize*uintptr(params.SQEntries), syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_POPULATE, fd, int64(SQEntriesOffset))
+	ringPtr, err = linked.MMap(0, sqEntrySize*uintptr(params.SQEntries), syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_POPULATE, fd, int64(SQEntriesOffset))
 	if err != nil {
 		MUnmap(sq, cq)
 		return fmt.Errorf("error while MMAPing SQ Ring's SQ Entry: %w", err)
@@ -85,10 +86,10 @@ func MMap(fd int, params *Params, sq *SubmissionQueue, cq *CompletionQueue) erro
 // MUnmap is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/setup.c#L11
 func MUnmap(sq *SubmissionQueue, cq *CompletionQueue) {
 	if sq.RingSize > 0 {
-		_ = munmap(uintptr(sq.RingPointer), uintptr(sq.RingSize))
+		_ = linked.MUnmap(uintptr(sq.RingPointer), uintptr(sq.RingSize))
 	}
 
 	if cq.RingSize > 0 {
-		_ = munmap(uintptr(cq.RingPointer), uintptr(cq.RingSize))
+		_ = linked.MUnmap(uintptr(cq.RingPointer), uintptr(cq.RingSize))
 	}
 }
