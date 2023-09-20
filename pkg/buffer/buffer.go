@@ -88,7 +88,7 @@ func (buf *Buffer) Cap() int {
 }
 
 func (buf *Buffer) Close() error {
-	return linked.MUnmap(uintptr(unsafe.Pointer(&(*buf)[0])), uintptr(cap(*buf)))
+	return linked.MUnmap(uintptr(unsafe.Pointer(&((*buf)[:cap(*buf)])[0])), uintptr(cap(*buf)))
 }
 
 func allocateBuffer(size int64) (uintptr, error) {
