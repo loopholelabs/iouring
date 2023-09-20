@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	emptyFD = int(^uintptr(0))
+	emptyFD = ^uintptr(0)
 )
 
 // Buffer is a special buffer that has its memory allocated outside of the Go heap
@@ -94,7 +94,7 @@ func (buf *Buffer) Close() error {
 
 func allocateBuffer(size int64) (uintptr, error) {
 	sizePointer := uintptr(size)
-	bufferAddress, err := linked.MMap(0, sizePointer, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_ANONYMOUS, emptyFD, 0)
+	bufferAddress, err := linked.MMap(0, sizePointer, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_ANONYMOUS, int(emptyFD), 0)
 	if err != nil {
 		return 0, fmt.Errorf("error while mmaping buffer memory space: %w", err)
 	}
