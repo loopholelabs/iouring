@@ -19,7 +19,6 @@ package buffer
 import (
 	"crypto/rand"
 	"github.com/loopholelabs/polyglot"
-	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -83,6 +82,77 @@ func BenchmarkPolyglotAllocationsNoResize(b *testing.B) {
 	}
 }
 
+func BenchmarkBufferAllocationsResize(b *testing.B) {
+	randomBytes := make([]byte, 512)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		b.Fatalf("failed to read random bytes: %v", err)
+	}
+
+	buf, err := New(512)
+	if err != nil {
+		b.Fatalf("failed to create buffer: %v", err)
+	}
+
+	b.Cleanup(func() {
+		err = buf.Close()
+		if err != nil {
+			b.Fatalf("failed to close buffer: %v", err)
+		}
+	})
+
+	var num int
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		num, err = buf.Write(randomBytes)
+		if err != nil {
+			b.Fatalf("failed to write bytes: %v", err)
+		}
+		if num != 512 {
+			b.Fatalf("number of bytes written is not correct: %d", num)
+		}
+		num, err = buf.Write(randomBytes)
+		if err != nil {
+			b.Fatalf("failed to write bytes: %v", err)
+		}
+		if num != 512 {
+			b.Fatalf("number of bytes written is not correct: %d", num)
+		}
+		buf.Reset()
+	}
+}
+
+func BenchmarkPolyglotAllocationsResize(b *testing.B) {
+	randomBytes := make([]byte, 512)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		b.Fatalf("failed to read random bytes: %v", err)
+	}
+
+	buf := polyglot.GetBuffer()
+	b.Cleanup(func() {
+		polyglot.PutBuffer(buf)
+	})
+
+	var num int
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		num = buf.Write(randomBytes)
+		if num != 512 {
+			b.Fatalf("number of bytes written is not correct: %d", num)
+		}
+		num = buf.Write(randomBytes)
+		if num != 512 {
+			b.Fatalf("number of bytes written is not correct: %d", num)
+		}
+		buf.Reset()
+	}
+}
+
 func BenchmarkBufferSizeCheck(b *testing.B) {
 	buf, err := New(512)
 	if err != nil {
@@ -122,11 +192,4 @@ func BenchmarkPolyglotSizeCheck(b *testing.B) {
 			b.Fatalf("buffer size is not correct: %d", cap(*buf)-len(*buf))
 		}
 	}
-}
-
-func TestBuffer(t *testing.T) {
-	buf, err := New(512)
-	require.NoError(t, err)
-	err = buf.Close()
-	require.NoError(t, err)
 }
