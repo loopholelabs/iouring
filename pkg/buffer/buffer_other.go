@@ -34,8 +34,8 @@ func New(int64) (*Buffer, error) {
 
 func (buf *Buffer) Reset() {}
 
-func (buf *Buffer) Write([]byte) bool {
-	return false
+func (buf *Buffer) Write([]byte) (int, error) {
+	return 0, ErrNotAvailable
 }
 
 func (buf *Buffer) Bytes() []byte {
