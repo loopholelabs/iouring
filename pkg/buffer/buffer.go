@@ -38,51 +38,42 @@ func New(size int64) (*Buffer, error) {
 	if size < 0 {
 		return nil, fmt.Errorf("size cannot be negative")
 	}
-	bufferAddress, err := linked.MMap(0, uintptr(size*2), syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_ANONYMOUS, emptyFD, 0)
+
+	bufferAddress, err := allocateBuffer(size)
 	if err != nil {
 		return nil, fmt.Errorf("error while allocating buffer: %w", err)
 	}
 
-	fd, err := unix.MemfdCreate("buffer", 0)
-	if err != nil {
-		return nil, fmt.Errorf("error while creating memfd: %w", err)
-	}
+	buffer := (Buffer)(unsafe.Slice((*byte)(unsafe.Pointer(bufferAddress)), size))
+	return &buffer, nil
+}
 
-	err = unix.Ftruncate(fd, size)
-	if err != nil {
-		return nil, fmt.Errorf("error while truncating memfd: %w", err)
-	}
+func (buf *Buffer) Write(b []byte) (int, error) {
+	if cap(*buf)-len(*buf) < len(b) {
+		newSize := int64(cap(*buf) + len(b))
+		bufferAddress, err := allocateBuffer(newSize)
+		if err != nil {
+			return 0, fmt.Errorf("error while allocating resized buffer: %w", err)
+		}
+		buffer := (Buffer)(unsafe.Slice((*byte)(unsafe.Pointer(bufferAddress)), newSize))[:len(*buf)]
+		copy(buffer, *buf)
 
-	_, err = linked.MMap(bufferAddress, uintptr(size), syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_FIXED, fd, 0)
-	if err != nil {
-		return nil, fmt.Errorf("internal mmap for first partition failed: %w", err)
-	}
+		err = linked.MUnmap(uintptr(unsafe.Pointer(&(*buf)[0])), uintptr(cap(*buf)))
+		if err != nil {
+			return 0, fmt.Errorf("error while unmapping existing buffer: %w", err)
+		}
 
-	_, err = linked.MMap(bufferAddress+uintptr(size), uintptr(size), syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_FIXED, fd, 0)
-	if err != nil {
-		return nil, fmt.Errorf("internal mmap for second partition failed: %w", err)
-	}
+		*buf = append(buffer, b...)
 
-	err = syscall.Close(fd)
-	if err != nil {
-		return nil, fmt.Errorf("error while closing memfd: %w", err)
+		//*buf = append((*buf)[:len(*buf)], b...)
+	} else {
+		*buf = (*buf)[:len(*buf)+copy((*buf)[len(*buf):cap(*buf)], b)]
 	}
-
-	buf := (Buffer)(unsafe.Slice((*byte)(unsafe.Pointer(bufferAddress)), size))
-	return &buf, nil
+	return len(*buf), nil
 }
 
 func (buf *Buffer) Reset() {
 	*buf = (*buf)[:0]
-}
-
-func (buf *Buffer) Write(b []byte) bool {
-	if cap(*buf)-len(*buf) < len(b) {
-		return false
-	} else {
-		*buf = (*buf)[:len(*buf)+copy((*buf)[len(*buf):cap(*buf)], b)]
-	}
-	return true
 }
 
 func (buf *Buffer) Bytes() []byte {
@@ -99,4 +90,34 @@ func (buf *Buffer) Cap() int {
 
 func (buf *Buffer) Close() error {
 	return linked.MUnmap(uintptr(unsafe.Pointer(&(*buf)[0])), uintptr(cap(*buf)))
+}
+
+func allocateBuffer(size int64) (uintptr, error) {
+	sizePointer := uintptr(size)
+	bufferAddress, err := linked.MMap(0, sizePointer, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_ANONYMOUS, emptyFD, 0)
+	if err != nil {
+		return 0, fmt.Errorf("error while mmaping buffer memory space: %w", err)
+	}
+
+	fd, err := unix.MemfdCreate("buffer", 0)
+	if err != nil {
+		return 0, fmt.Errorf("error while creating memfd: %w", err)
+	}
+
+	err = unix.Ftruncate(fd, size)
+	if err != nil {
+		return 0, fmt.Errorf("error while truncating memfd: %w", err)
+	}
+
+	_, err = linked.MMap(bufferAddress, sizePointer, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_FIXED, fd, 0)
+	if err != nil {
+		return 0, fmt.Errorf("error while mmaping buffer: %w", err)
+	}
+
+	err = syscall.Close(fd)
+	if err != nil {
+		return 0, fmt.Errorf("error while closing memfd: %w", err)
+	}
+
+	return bufferAddress, nil
 }
