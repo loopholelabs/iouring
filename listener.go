@@ -86,10 +86,14 @@ func NewListener(addr string) (*Listener, error) {
 		return nil, fmt.Errorf("error while starting to listen on socket with fd %d: %w", fd, err)
 	}
 
-	ring := NewRing()
+	ring, err := NewRing()
+	if err != nil {
+		return nil, fmt.Errorf("error while creating ring for listening socket with fd %d: %w", fd, err)
+	}
+
 	err = ring.QueueInit(AcceptEntries, 0)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating ringbuffer for listening socket with fd %d: %w", fd, err)
+		return nil, fmt.Errorf("error while initializng ring for listening socket with fd %d: %w", fd, err)
 	}
 
 	clientAddr := NewClientAddress()

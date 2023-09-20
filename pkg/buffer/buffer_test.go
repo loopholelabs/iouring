@@ -50,7 +50,7 @@ func BenchmarkBufferAllocationsNoResize(b *testing.B) {
 		if err != nil {
 			b.Fatalf("failed to write bytes: %v", err)
 		}
-		if num != 512 {
+		if num != len(randomBytes) {
 			b.Fatalf("number of bytes written is not correct: %d", num)
 		}
 		buf.Reset()
@@ -75,10 +75,60 @@ func BenchmarkPolyglotAllocationsNoResize(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		num = buf.Write(randomBytes)
-		if num != 512 {
+		if num != len(randomBytes) {
 			b.Fatalf("number of bytes written is not correct: %d", num)
 		}
 		buf.Reset()
+	}
+}
+
+func BenchmarkBufferAllocationsNoResizePool(b *testing.B) {
+	randomBytes := make([]byte, 512)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		b.Fatalf("failed to read random bytes: %v", err)
+	}
+
+	var num int
+	var buf *Buffer
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		buf, err = GetBuffer()
+		if err != nil {
+			b.Fatalf("failed to write bytes: %v", err)
+		}
+		num, err = buf.Write(randomBytes)
+		if err != nil {
+			b.Fatalf("failed to write bytes: %v", err)
+		}
+		if num != len(randomBytes) {
+			b.Fatalf("number of bytes written is not correct: %d", num)
+		}
+		PutBuffer(buf)
+	}
+}
+
+func BenchmarkPolyglotAllocationsNoResizePool(b *testing.B) {
+	randomBytes := make([]byte, 512)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		b.Fatalf("failed to read random bytes: %v", err)
+	}
+
+	var num int
+	var buf *polyglot.Buffer
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		buf = polyglot.GetBuffer()
+		num = buf.Write(randomBytes)
+		if num != len(randomBytes) {
+			b.Fatalf("number of bytes written is not correct: %d", num)
+		}
+		polyglot.PutBuffer(buf)
 	}
 }
 
@@ -110,14 +160,14 @@ func BenchmarkBufferAllocationsResize(b *testing.B) {
 		if err != nil {
 			b.Fatalf("failed to write bytes: %v", err)
 		}
-		if num != 2048 {
+		if num != len(randomBytes) {
 			b.Fatalf("number of bytes written is not correct: %d", num)
 		}
 		num, err = buf.Write(randomBytes)
 		if err != nil {
 			b.Fatalf("failed to write bytes: %v", err)
 		}
-		if num != 2048 {
+		if num != len(randomBytes) {
 			b.Fatalf("number of bytes written is not correct: %d", num)
 		}
 		buf.Reset()
@@ -142,14 +192,75 @@ func BenchmarkPolyglotAllocationsResize(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		num = buf.Write(randomBytes)
-		if num != 2048 {
+		if num != len(randomBytes) {
 			b.Fatalf("number of bytes written is not correct: %d", num)
 		}
 		num = buf.Write(randomBytes)
-		if num != 2048 {
+		if num != len(randomBytes) {
 			b.Fatalf("number of bytes written is not correct: %d", num)
 		}
 		buf.Reset()
+	}
+}
+
+func BenchmarkBufferAllocationsResizePool(b *testing.B) {
+	randomBytes := make([]byte, 2048)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		b.Fatalf("failed to read random bytes: %v", err)
+	}
+
+	var num int
+	var buf *Buffer
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		buf, err = GetBuffer()
+		if err != nil {
+			b.Fatalf("failed to write bytes: %v", err)
+		}
+		num, err = buf.Write(randomBytes)
+		if err != nil {
+			b.Fatalf("failed to write bytes: %v", err)
+		}
+		if num != len(randomBytes) {
+			b.Fatalf("number of bytes written is not correct: %d", num)
+		}
+		num, err = buf.Write(randomBytes)
+		if err != nil {
+			b.Fatalf("failed to write bytes: %v", err)
+		}
+		if num != len(randomBytes) {
+			b.Fatalf("number of bytes written is not correct: %d", num)
+		}
+		PutBuffer(buf)
+	}
+}
+
+func BenchmarkPolyglotAllocationsResizePool(b *testing.B) {
+	randomBytes := make([]byte, 2048)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		b.Fatalf("failed to read random bytes: %v", err)
+	}
+
+	var num int
+	var buf *polyglot.Buffer
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		buf = polyglot.GetBuffer()
+		num = buf.Write(randomBytes)
+		if num != len(randomBytes) {
+			b.Fatalf("number of bytes written is not correct: %d", num)
+		}
+		num = buf.Write(randomBytes)
+		if num != len(randomBytes) {
+			b.Fatalf("number of bytes written is not correct: %d", num)
+		}
+		polyglot.PutBuffer(buf)
 	}
 }
 
