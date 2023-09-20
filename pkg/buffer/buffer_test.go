@@ -18,12 +18,12 @@ package buffer
 
 import (
 	"crypto/rand"
+	"github.com/loopholelabs/polyglot"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func BenchmarkBufferAllocations(b *testing.B) {
-	b.ReportAllocs()
 	nominalBytes1 := make([]byte, 512)
 	_, err := rand.Read(nominalBytes1)
 	if err != nil {
@@ -35,12 +35,25 @@ func BenchmarkBufferAllocations(b *testing.B) {
 	if err != nil {
 		b.Fatalf("failed to read random bytes: %v", err)
 	}
-	for i := 0; i < b.N; i++ {
-		buf, err := New(512)
+
+	buf, err := New(512)
+	if err != nil {
+		b.Fatalf("failed to create buffer: %v", err)
+	}
+
+	b.Cleanup(func() {
+		err = buf.Close()
 		if err != nil {
-			b.Fatalf("failed to create buffer: %v", err)
+			b.Fatalf("failed to close buffer: %v", err)
 		}
-		num, err := buf.Write(nominalBytes1)
+	})
+
+	var num int
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		num, err = buf.Write(nominalBytes1)
 		if err != nil {
 			b.Fatalf("failed to write bytes: %v", err)
 		}
@@ -52,14 +65,48 @@ func BenchmarkBufferAllocations(b *testing.B) {
 		if err != nil {
 			b.Fatalf("failed to write bytes: %v", err)
 		}
-		if num != 1024 {
+		if num != 512 {
 			b.Fatalf("number of bytes written is not correct: %d", num)
 		}
 
-		err = buf.Close()
-		if err != nil {
-			b.Fatalf("failed to close buffer: %v", err)
+		buf.Reset()
+	}
+}
+
+func BenchmarkPolyglotAllocations(b *testing.B) {
+	nominalBytes1 := make([]byte, 512)
+	_, err := rand.Read(nominalBytes1)
+	if err != nil {
+		b.Fatalf("failed to read random bytes: %v", err)
+	}
+
+	nominalBytes2 := make([]byte, 512)
+	_, err = rand.Read(nominalBytes2)
+	if err != nil {
+		b.Fatalf("failed to read random bytes: %v", err)
+	}
+
+	buf := polyglot.GetBuffer()
+	b.Cleanup(func() {
+		polyglot.PutBuffer(buf)
+	})
+
+	var num int
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		num = buf.Write(nominalBytes1)
+		if num != 512 {
+			b.Fatalf("number of bytes written is not correct: %d", num)
 		}
+
+		num = buf.Write(nominalBytes2)
+		if num != 512 {
+			b.Fatalf("number of bytes written is not correct: %d", num)
+		}
+
+		buf.Reset()
 	}
 }
 

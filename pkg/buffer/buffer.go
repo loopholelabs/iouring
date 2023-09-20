@@ -44,22 +44,19 @@ func New(size int64) (*Buffer, error) {
 		return nil, fmt.Errorf("error while allocating buffer: %w", err)
 	}
 
-	buffer := (Buffer)(unsafe.Slice((*byte)(unsafe.Pointer(bufferAddress)), size))
-	buffer.Reset()
+	buffer := (Buffer)(unsafe.Slice((*byte)(unsafe.Pointer(bufferAddress)), size))[:0]
 	return &buffer, nil
 }
 
 func (buf *Buffer) Write(b []byte) (int, error) {
 	if cap(*buf)-len(*buf) < len(b) {
 		newSize := int64(cap(*buf) + len(b))
-
 		bufferAddress, err := allocateBuffer(newSize)
 		if err != nil {
 			return 0, fmt.Errorf("error while allocating resized buffer: %w", err)
 		}
 		buffer := (Buffer)(unsafe.Slice((*byte)(unsafe.Pointer(bufferAddress)), newSize))[:len(*buf)]
 		copy(buffer, *buf)
-
 		err = linked.MUnmap(uintptr(unsafe.Pointer(&(*buf)[0])), uintptr(cap(*buf)))
 		if err != nil {
 			return 0, fmt.Errorf("error while unmapping existing buffer: %w", err)
@@ -68,7 +65,7 @@ func (buf *Buffer) Write(b []byte) (int, error) {
 	} else {
 		*buf = (*buf)[:len(*buf)+copy((*buf)[len(*buf):cap(*buf)], b)]
 	}
-	return len(*buf), nil
+	return len(b), nil
 }
 
 func (buf *Buffer) Reset() {
