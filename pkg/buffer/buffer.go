@@ -22,12 +22,15 @@ import (
 	"fmt"
 	"github.com/loopholelabs/iouring/pkg/linked"
 	"golang.org/x/sys/unix"
+	"math"
+	"os"
 	"syscall"
 	"unsafe"
 )
 
 var (
-	emptyFD = ^uintptr(0)
+	emptyFD  = ^uintptr(0)
+	pageSize = os.Getpagesize()
 )
 
 // Buffer is a special buffer that has its memory allocated outside of the Go heap
@@ -35,6 +38,8 @@ var (
 type Buffer []byte
 
 func New(size int64) (*Buffer, error) {
+	size = int64(math.Ceil(float64(size)/float64(pageSize)) * float64(pageSize))
+
 	if size < 0 {
 		return nil, fmt.Errorf("size cannot be negative")
 	}
@@ -50,7 +55,7 @@ func New(size int64) (*Buffer, error) {
 
 func (buf *Buffer) Write(b []byte) (int, error) {
 	if cap(*buf)-len(*buf) < len(b) {
-		newSize := int64(cap(*buf) + len(b))
+		newSize := int64(math.Ceil(float64(cap(*buf)+len(b))/float64(pageSize)) * float64(pageSize))
 		bufferAddress, err := allocateBuffer(newSize)
 		if err != nil {
 			return 0, fmt.Errorf("error while allocating resized buffer: %w", err)
