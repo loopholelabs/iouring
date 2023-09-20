@@ -64,11 +64,7 @@ func (buf *Buffer) Write(b []byte) (int, error) {
 		if err != nil {
 			return 0, fmt.Errorf("error while unmapping existing buffer: %w", err)
 		}
-
-		copy(buffer[len(buffer):], b)
-
-		*buf = buffer
-		//*buf = append((*buf)[:len(*buf)], b...)
+		*buf = buffer[:len(buffer)+copy((buffer)[len(buffer):cap(buffer)], b)]
 	} else {
 		*buf = (*buf)[:len(*buf)+copy((*buf)[len(*buf):cap(*buf)], b)]
 	}
