@@ -273,6 +273,49 @@ const (
 	FeatureRegRegRing
 )
 
+// RegisterOpCode is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing/io_uring.h#L484
+type RegisterOpCode uint32
+
+const (
+	RegisterOpCodeRegisterBuffers RegisterOpCode = iota
+	RegisterOpCodeUnregisterBuffers
+	RegisterOpCodeRegisterFiles
+	RegisterOpCodeUnregisterFiles
+	RegisterOpCodeRegisterEventFD
+	RegisterOpCodeUnregisterEventFD
+	RegisterOpCodeRegisterFilesUpdate
+	RegisterOpCodeRegisterEventFDAsync
+	RegisterOpCodeRegisterProbe
+	RegisterOpCodeRegisterPersonality
+	RegisterOpCodeUnregisterPersonality
+	RegisterOpCodeRegisterRestrictions
+	RegisterOpCodeRegisterEnableRings
+
+	RegisterOpCodeRegisterFiles2
+	RegisterOpCodeRegisterFilesUpdate2
+	RegisterOpCodeRegisterBuffers2
+	RegisterOpCodeRegisterBuffersUpdate
+
+	RegisterOpCodeRegisterIOWQAff
+	RegisterOpCodeUnregisterIOWQAff
+
+	RegisterOpCodeRegisterIOWQMaxWorkers
+
+	RegisterOpCodeRegisterRingFDs
+	RegisterOpCodeUnregisterRingFDs
+
+	RegisterOpCodeRegisterPbufRing
+	RegisterOpCodeUnregisterPbufRing
+
+	RegisterOpCodeRegisterSyncCancel
+
+	RegisterOpCodeRegisterFileAllocRange
+
+	RegisterOpCodeRegisterLast
+
+	RegisterOpCodeRegisterUseRegisteredRing = 1 << 31
+)
+
 const (
 	// _NSIG is defined here: https://github.com/torvalds/linux/blob/v6.5/include/uapi/asm-generic/signal.h#L7
 	_NSIG = 64
