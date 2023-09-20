@@ -68,6 +68,7 @@ func BenchmarkFixedAllocationsNoResizePool(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		var num int
 		var buf *Fixed
+		var err error
 		for pb.Next() {
 			buf, err = GetFixed()
 			if err != nil {

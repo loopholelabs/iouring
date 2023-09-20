@@ -94,6 +94,7 @@ func BenchmarkBufferAllocationsNoResizePool(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		var num int
 		var buf *Buffer
+		var err error
 		for pb.Next() {
 			buf, err = GetBuffer()
 			if err != nil {
@@ -217,6 +218,7 @@ func BenchmarkBufferAllocationsResizePool(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		var num int
 		var buf *Buffer
+		var err error
 		for pb.Next() {
 			buf, err = GetBuffer()
 			if err != nil {
