@@ -83,7 +83,7 @@ func BenchmarkPolyglotAllocationsNoResize(b *testing.B) {
 }
 
 func BenchmarkBufferAllocationsResize(b *testing.B) {
-	randomBytes := make([]byte, 512)
+	randomBytes := make([]byte, 2048)
 	_, err := rand.Read(randomBytes)
 	if err != nil {
 		b.Fatalf("failed to read random bytes: %v", err)
@@ -110,14 +110,14 @@ func BenchmarkBufferAllocationsResize(b *testing.B) {
 		if err != nil {
 			b.Fatalf("failed to write bytes: %v", err)
 		}
-		if num != 512 {
+		if num != 2048 {
 			b.Fatalf("number of bytes written is not correct: %d", num)
 		}
 		num, err = buf.Write(randomBytes)
 		if err != nil {
 			b.Fatalf("failed to write bytes: %v", err)
 		}
-		if num != 512 {
+		if num != 2048 {
 			b.Fatalf("number of bytes written is not correct: %d", num)
 		}
 		buf.Reset()
@@ -125,7 +125,7 @@ func BenchmarkBufferAllocationsResize(b *testing.B) {
 }
 
 func BenchmarkPolyglotAllocationsResize(b *testing.B) {
-	randomBytes := make([]byte, 512)
+	randomBytes := make([]byte, 2048)
 	_, err := rand.Read(randomBytes)
 	if err != nil {
 		b.Fatalf("failed to read random bytes: %v", err)
@@ -142,11 +142,11 @@ func BenchmarkPolyglotAllocationsResize(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		num = buf.Write(randomBytes)
-		if num != 512 {
+		if num != 2048 {
 			b.Fatalf("number of bytes written is not correct: %d", num)
 		}
 		num = buf.Write(randomBytes)
-		if num != 512 {
+		if num != 2048 {
 			b.Fatalf("number of bytes written is not correct: %d", num)
 		}
 		buf.Reset()

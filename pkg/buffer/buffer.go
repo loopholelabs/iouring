@@ -28,6 +28,10 @@ import (
 	"unsafe"
 )
 
+//go:noescape
+//go:linkname memmove runtime.memmove
+func memmove(unsafe.Pointer, unsafe.Pointer, uintptr)
+
 var (
 	emptyFD  = ^uintptr(0)
 	pageSize = os.Getpagesize()
@@ -68,7 +72,8 @@ func (buf *Buffer) Write(b []byte) (int, error) {
 		}
 		*buf = buffer[:len(buffer)+copy((buffer)[len(buffer):cap(buffer)], b)]
 	} else {
-		*buf = (*buf)[:len(*buf)+copy((*buf)[len(*buf):cap(*buf)], b)]
+		memmove(unsafe.Pointer(&((*buf)[:cap(*buf)])[len(*buf)]), unsafe.Pointer(&b[0]), uintptr(len(b)))
+		*buf = (*buf)[:len(*buf)+len(b)]
 	}
 	return len(b), nil
 }
