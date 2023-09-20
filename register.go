@@ -21,11 +21,6 @@ import (
 	"unsafe"
 )
 
-// RegisterBuffers is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/register.c#L59
-func (r *Ring) RegisterBuffers(iovecs []syscall.Iovec, NRIOVecs uint32) (uint, error) {
-	return r.DoRegister(RegisterOpCodeRegisterBuffers, unsafe.Pointer(&iovecs[0]), uint32(len(iovecs)))
-}
-
 // DoRegister is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/register.c#L11
 func (r *Ring) DoRegister(opCode RegisterOpCode, arg unsafe.Pointer, NRArgs uint32) (uint, error) {
 	if r.IntFlags&uint8(IntFlagRegRegRing) != 0 {
@@ -33,4 +28,9 @@ func (r *Ring) DoRegister(opCode RegisterOpCode, arg unsafe.Pointer, NRArgs uint
 	}
 
 	return r._Register(uint32(opCode), arg, NRArgs)
+}
+
+// RegisterBuffers is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/register.c#L59
+func (r *Ring) RegisterBuffers(iovecs []syscall.Iovec, NRIOVecs uint32) (uint, error) {
+	return r.DoRegister(RegisterOpCodeRegisterBuffers, unsafe.Pointer(&iovecs[0]), NRIOVecs)
 }
