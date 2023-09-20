@@ -28,10 +28,6 @@ import (
 	"unsafe"
 )
 
-//go:noescape
-//go:linkname memmove runtime.memmove
-func memmove(unsafe.Pointer, unsafe.Pointer, uintptr)
-
 var (
 	emptyFD  = ^uintptr(0)
 	pageSize = os.Getpagesize()
@@ -53,7 +49,7 @@ func New(size int64) (*Buffer, error) {
 		return nil, fmt.Errorf("error while allocating buffer: %w", err)
 	}
 
-	buffer := (Buffer)(unsafe.Slice((*byte)(unsafe.Pointer(bufferAddress)), size))[:0]
+	buffer := (Buffer)(unsafe.Slice((*byte)(bufferAddress), size))[:0]
 	return &buffer, nil
 }
 
@@ -64,7 +60,7 @@ func (buf *Buffer) Write(b []byte) (int, error) {
 		if err != nil {
 			return 0, fmt.Errorf("error while allocating resized buffer: %w", err)
 		}
-		buffer := (Buffer)(unsafe.Slice((*byte)(unsafe.Pointer(bufferAddress)), newSize))[:len(*buf)]
+		buffer := (Buffer)(unsafe.Slice((*byte)(bufferAddress), newSize))[:len(*buf)]
 		copy(buffer, *buf)
 		err = linked.MUnmap(uintptr(unsafe.Pointer(&(*buf)[0])), uintptr(cap(*buf)))
 		if err != nil {
@@ -72,8 +68,7 @@ func (buf *Buffer) Write(b []byte) (int, error) {
 		}
 		*buf = buffer[:len(buffer)+copy((buffer)[len(buffer):cap(buffer)], b)]
 	} else {
-		memmove(unsafe.Pointer(&((*buf)[:cap(*buf)])[len(*buf)]), unsafe.Pointer(&b[0]), uintptr(len(b)))
-		*buf = (*buf)[:len(*buf)+len(b)]
+		*buf = (*buf)[:len(*buf)+copy((*buf)[len(*buf):cap(*buf)], b)]
 	}
 	return len(b), nil
 }
@@ -98,32 +93,32 @@ func (buf *Buffer) Close() error {
 	return linked.MUnmap(uintptr(unsafe.Pointer(&((*buf)[:cap(*buf)])[0])), uintptr(cap(*buf)))
 }
 
-func allocateBuffer(size int64) (uintptr, error) {
+func allocateBuffer(size int64) (unsafe.Pointer, error) {
 	sizePointer := uintptr(size)
 	bufferAddress, err := linked.MMap(0, sizePointer, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_ANONYMOUS, int(emptyFD), 0)
 	if err != nil {
-		return 0, fmt.Errorf("error while mmaping buffer memory space: %w", err)
+		return nil, fmt.Errorf("error while mmaping buffer memory space: %w", err)
 	}
 
 	fd, err := unix.MemfdCreate("buffer", 0)
 	if err != nil {
-		return 0, fmt.Errorf("error while creating memfd: %w", err)
+		return nil, fmt.Errorf("error while creating memfd: %w", err)
 	}
 
 	err = unix.Ftruncate(fd, size)
 	if err != nil {
-		return 0, fmt.Errorf("error while truncating memfd: %w", err)
+		return nil, fmt.Errorf("error while truncating memfd: %w", err)
 	}
 
 	_, err = linked.MMap(bufferAddress, sizePointer, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED|syscall.MAP_FIXED, fd, 0)
 	if err != nil {
-		return 0, fmt.Errorf("error while mmaping buffer: %w", err)
+		return nil, fmt.Errorf("error while mmaping buffer: %w", err)
 	}
 
 	err = syscall.Close(fd)
 	if err != nil {
-		return 0, fmt.Errorf("error while closing memfd: %w", err)
+		return nil, fmt.Errorf("error while closing memfd: %w", err)
 	}
 
-	return bufferAddress, nil
+	return unsafe.Pointer(bufferAddress), nil
 }
