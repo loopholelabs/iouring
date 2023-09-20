@@ -18,12 +18,21 @@ package buffer
 
 import (
 	"github.com/stretchr/testify/require"
+	"runtime"
 	"testing"
 )
 
 func TestBuffer(t *testing.T) {
+	baseMemStats := new(runtime.MemStats)
+	runtime.ReadMemStats(baseMemStats)
+
 	buf, err := New(512)
 	require.NoError(t, err)
+
+	memStats := new(runtime.MemStats)
+	runtime.ReadMemStats(memStats)
+
+	require.Equal(t, baseMemStats.HeapObjects+1, memStats.HeapObjects)
 
 	err = buf.Close()
 	require.NoError(t, err)
