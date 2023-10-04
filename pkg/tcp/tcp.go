@@ -16,6 +16,12 @@
 
 package tcp
 
+import (
+	"fmt"
+	"github.com/loopholelabs/iouring/pkg/buffer"
+	"syscall"
+)
+
 type State uint8
 
 const (
@@ -44,5 +50,21 @@ func (s State) String() string {
 }
 
 type Connection struct {
-	FD int
+	FD     int
+	IOVecs []syscall.Iovec
+}
+
+func New() (*Connection, error) {
+	buf, err := buffer.GetFixed()
+	if err != nil {
+		return nil, fmt.Errorf("error while getting fixed buffer: %w", err)
+	}
+
+	return &Connection{
+		IOVecs: syscall.Iovec{
+			Base: &buf.Bytes()[0],
+			Len:  uint64(buf.Cap()),
+		},
+	}, nil
+
 }

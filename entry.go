@@ -38,3 +38,9 @@ func (e *SQEntry) PrepareAccept(fd int, addressPointer uintptr, addressLength ui
 	e.PrepareRW(OpCodeAccept, fd, addressPointer, 0, addressLength)
 	e.UnionRWFlags = flags
 }
+
+// PrepareWriteFixed is defined here: https://github.com/axboe/liburing/blob/liburing-2.4/src/include/liburing.h#L482
+func (e *SQEntry) PrepareWriteFixed(fd int, buf uintptr, nbytes uint32, offset uint64, bufIndex int) {
+	e.PrepareRW(OpCodeWriteFixed, fd, buf, nbytes, offset)
+	e.UnionBufferIndexPacked = uint16(bufIndex)
+}
