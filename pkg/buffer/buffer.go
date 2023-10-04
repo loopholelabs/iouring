@@ -24,6 +24,7 @@ import (
 	"golang.org/x/sys/unix"
 	"math"
 	"os"
+	"runtime"
 	"syscall"
 	"unsafe"
 )
@@ -37,7 +38,7 @@ var (
 // via mmap.
 type Buffer []byte
 
-func New(size int64) (*Buffer, error) {
+func New(size int64, finalizer ...bool) (*Buffer, error) {
 	size = int64(math.Ceil(float64(size)/float64(pageSize)) * float64(pageSize))
 
 	if size < 0 {
@@ -50,6 +51,14 @@ func New(size int64) (*Buffer, error) {
 	}
 
 	buffer := (Buffer)(unsafe.Slice((*byte)(bufferAddress), size))[:0]
+	if len(finalizer) > 0 && finalizer[0] {
+		runtime.SetFinalizer(&buffer, func(buf *Buffer) {
+			err := buf.close()
+			if err != nil {
+				panic(fmt.Errorf("error while closing buffer: %w", err))
+			}
+		})
+	}
 	return &buffer, nil
 }
 
@@ -89,7 +98,14 @@ func (buf *Buffer) Cap() int {
 	return cap(*buf)
 }
 
+// Close closes the buffer and frees the memory allocated for it.
+//
+// Note: This method should only be used if the buffer was allocated with the finalizer
 func (buf *Buffer) Close() error {
+	return buf.close()
+}
+
+func (buf *Buffer) close() error {
 	return linked.MUnmap(uintptr(unsafe.Pointer(&((*buf)[:cap(*buf)])[0])), uintptr(cap(*buf)))
 }
 
