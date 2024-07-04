@@ -3,7 +3,7 @@ module github.com/loopholelabs/iouring
 go 1.20
 
 require (
-	github.com/loopholelabs/polyglot v1.1.3
+	github.com/loopholelabs/polyglot v1.3.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/sys v0.22.0
 )
