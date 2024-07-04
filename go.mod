@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/loopholelabs/polyglot v1.1.3
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/sys v0.12.0
+	golang.org/x/sys v0.22.0
 )
 
 require (
