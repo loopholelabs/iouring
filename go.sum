@@ -1,7 +1,7 @@
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/loopholelabs/polyglot v1.3.0 h1:pOQjZHo4X/VEjADkmM2tXHui8NFkOlmaU4D/4W18WK8=
-github.com/loopholelabs/polyglot v1.3.0/go.mod h1:w9F5kdv3EzE2r7scpmj29hoySRr7NNLjpeUL4ALMusA=
+github.com/loopholelabs/polyglot/v2 v2.0.1 h1:JVSrXwx3jzr6/IrUe7Y1f7R3I6bFaVjLlPNLjJlmQaU=
+github.com/loopholelabs/polyglot/v2 v2.0.1/go.mod h1:kFoSKvnKAWmV0ICfbaCHDv/+cz5LSuA+xXG4WtYV/z4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=

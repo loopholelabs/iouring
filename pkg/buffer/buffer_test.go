@@ -18,7 +18,7 @@ package buffer
 
 import (
 	"crypto/rand"
-	"github.com/loopholelabs/polyglot"
+	"github.com/loopholelabs/polyglot/v2"
 	"testing"
 )
 
