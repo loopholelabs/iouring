@@ -7,7 +7,7 @@ toolchain go1.22.2
 require (
 	github.com/loopholelabs/polyglot/v2 v2.0.1
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/sys v0.22.0
+	golang.org/x/sys v0.23.0
 )
 
 require (
